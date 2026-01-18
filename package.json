@@ -1,0 +1,17 @@
+{
+    "name": "content-automation",
+    "version": "1.0.0",
+    "description": "Automated content posting to X and LinkedIn",
+    "scripts": {
+        "post-x": "node scripts/post-to-x.js",
+        "post-linkedin": "node scripts/post-to-linkedin.js",
+        "stats": "node scripts/collect-stats.js"
+    },
+    "dependencies": {
+        "googleapis": "^134.0.0",
+        "twitter-api-v2": "^1.17.0"
+    },
+    "engines": {
+        "node": ">=20.0.0"
+    }
+}

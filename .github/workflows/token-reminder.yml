@@ -1,0 +1,60 @@
+name: LinkedIn Token Reminder
+on:
+  schedule:
+    # Run daily at 9am UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Manual trigger for testing
+
+jobs:
+  check-token:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check token expiry and send reminders
+        run: |
+          # Token created date (UPDATE THIS WHEN YOU REFRESH THE TOKEN)
+          TOKEN_CREATED="2026-01-18"
+          EXPIRY_DAYS=60
+          
+          # Calculate days until expiry
+          CREATED_TS=$(date -d "$TOKEN_CREATED" +%s)
+          EXPIRY_TS=$((CREATED_TS + EXPIRY_DAYS * 86400))
+          NOW_TS=$(date +%s)
+          DAYS_LEFT=$(( (EXPIRY_TS - NOW_TS) / 86400 ))
+          
+          echo "Days until LinkedIn token expires: $DAYS_LEFT"
+          
+          # Send Discord notification based on days left
+          if [ $DAYS_LEFT -eq 2 ]; then
+            curl -H "Content-Type: application/json" \
+              -d '{
+                "embeds": [{
+                  "title": "⚠️ LinkedIn Token Expiring Soon",
+                  "color": 16776960,
+                  "description": "Your LinkedIn access token expires in **2 days**.\n\nRegenerate it before it stops working:\n1. Go to [LinkedIn OAuth Tools](https://www.linkedin.com/developers/tools/oauth)\n2. Select your app\n3. Check `w_member_social`\n4. Click Request access token\n5. Update `LINKEDIN_ACCESS_TOKEN` in GitHub Secrets",
+                  "footer": {"text": "CAM Solutions Automation"}
+                }]
+              }' \
+              "${{ secrets.DISCORD_TOKEN_WEBHOOK }}"
+          elif [ $DAYS_LEFT -eq 0 ]; then
+            curl -H "Content-Type: application/json" \
+              -d '{
+                "embeds": [{
+                  "title": "🚨 LinkedIn Token EXPIRED",
+                  "color": 15158332,
+                  "description": "Your LinkedIn access token has **expired today**.\n\n⛔ **LinkedIn posting is now DISABLED** until you refresh the token.\n\n**To fix:**\n1. Go to [LinkedIn OAuth Tools](https://www.linkedin.com/developers/tools/oauth)\n2. Select your app\n3. Check `w_member_social`\n4. Click Request access token\n5. Update `LINKEDIN_ACCESS_TOKEN` in GitHub Secrets\n6. Update `TOKEN_CREATED` in this workflow file",
+                  "footer": {"text": "CAM Solutions Automation"}
+                }]
+              }' \
+              "${{ secrets.DISCORD_TOKEN_WEBHOOK }}"
+          elif [ $DAYS_LEFT -lt 0 ]; then
+            curl -H "Content-Type: application/json" \
+              -d '{
+                "embeds": [{
+                  "title": "🔴 LinkedIn Token EXPIRED",
+                  "color": 15158332,
+                  "description": "Your LinkedIn token expired **'$((-DAYS_LEFT))' days ago**.\n\nLinkedIn posting is NOT working.\n\nRefresh immediately at [LinkedIn OAuth Tools](https://www.linkedin.com/developers/tools/oauth)",
+                  "footer": {"text": "CAM Solutions Automation"}
+                }]
+              }' \
+              "${{ secrets.DISCORD_TOKEN_WEBHOOK }}"
+          fi
