@@ -159,8 +159,7 @@ async function fetchLinkedInPostStats(accessToken, postUrn) {
 
     if (!response.ok) {
         const errorText = await response.text();
-        console.error(`Post ${postUrn} stats failed: ${response.status} - ${errorText}`);
-        return { impressions: 0, reactions: 0, comments: 0 };
+        throw new Error(`LinkedIn API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
