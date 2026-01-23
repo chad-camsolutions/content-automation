@@ -145,16 +145,10 @@ async function collectLinkedInStats() {
  */
 async function fetchLinkedInMetric(accessToken, postUrn, metricType) {
     // Encode the URN for the entity parameter
-    // Format: entity=(ugc:urn%3Ali%3AugcPost%3A{id})
     const encodedUrn = encodeURIComponent(postUrn);
 
-    // Determine the entity type prefix based on URN
-    let entityPrefix = 'ugc';
-    if (postUrn.includes('share')) {
-        entityPrefix = 'share';
-    }
-
-    const url = `https://api.linkedin.com/rest/memberCreatorPostAnalytics?q=entity&entity=(${entityPrefix}:${encodedUrn})&queryType=${metricType}`;
+    // LinkedIn memberCreatorPostAnalytics takes the URN directly in 'entity' parameter
+    const url = `https://api.linkedin.com/rest/memberCreatorPostAnalytics?q=entity&entity=${encodedUrn}&queryType=${metricType}`;
 
     const response = await fetch(url, {
         headers: {
