@@ -158,8 +158,9 @@ async function fetchLinkedInPostStats(accessToken, postUrn) {
     });
 
     if (!response.ok) {
-        // Try alternative: socialActions for basic engagement counts
-        return await fetchLinkedInSocialActions(accessToken, postUrn);
+        const errorText = await response.text();
+        console.error(`Post ${postUrn} stats failed: ${response.status} - ${errorText}`);
+        return { impressions: 0, reactions: 0, comments: 0 };
     }
 
     const data = await response.json();
@@ -172,36 +173,7 @@ async function fetchLinkedInPostStats(accessToken, postUrn) {
     };
 }
 
-/**
- * Fallback: Try socialMetadata endpoint for engagement stats
- */
-async function fetchLinkedInSocialActions(accessToken, postUrn) {
-    const encodedUrn = encodeURIComponent(postUrn);
 
-    // Try the socialMetadata endpoint
-    const url = `https://api.linkedin.com/rest/socialMetadata/${encodedUrn}`;
-
-    const response = await fetch(url, {
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'LinkedIn-Version': '202601',
-            'X-Restli-Protocol-Version': '2.0.0'
-        }
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`LinkedIn API error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-
-    return {
-        impressions: 0, // Not available via this endpoint
-        reactions: data.totalReactionCount || data.likeCount || 0,
-        comments: data.totalCommentCount || data.commentCount || 0
-    };
-}
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
