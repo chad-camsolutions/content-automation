@@ -30,13 +30,13 @@ async function collectXStats() {
     });
 
     // Get posts needing stats
-    const posts = await sheets.getPostsNeedingStats('X_Posted');
+    const posts = await sheets.getPostsNeedingStats('X Posted');
     console.log(`Found ${posts.length} posts needing stats`);
 
     if (posts.length === 0) return;
 
     // Get average for winner calculation
-    const avgEngagement = await sheets.getAverageEngagement('X_Posted');
+    const avgEngagement = await sheets.getAverageEngagement('X Posted');
     const winnerThreshold = avgEngagement * 2;
     console.log(`Average engagement: ${avgEngagement.toFixed(0)}, Winner threshold: ${winnerThreshold.toFixed(0)}`);
 
@@ -57,7 +57,7 @@ async function collectXStats() {
 
             console.log(`Tweet ${post.platformPostId}: ${metrics.impression_count} impressions, ${engagement} engagement ${isWinner ? '🏆' : ''}`);
 
-            await sheets.writeStats('X_Posted', post.rowIndex, {
+            await sheets.writeStats('X Posted', post.rowIndex, {
                 impressions: metrics.impression_count || 0,
                 engagement,
                 isWinner
@@ -81,13 +81,13 @@ async function collectLinkedInStats() {
     }
 
     // Get posts needing stats
-    const posts = await sheets.getPostsNeedingStats('LinkedIn_Posted');
+    const posts = await sheets.getPostsNeedingStats('LinkedIn Posted');
     console.log(`Found ${posts.length} posts needing stats`);
 
     if (posts.length === 0) return;
 
     // Get average for winner calculation
-    const avgEngagement = await sheets.getAverageEngagement('LinkedIn_Posted');
+    const avgEngagement = await sheets.getAverageEngagement('LinkedIn Posted');
     const winnerThreshold = avgEngagement * 2;
     console.log(`Average engagement: ${avgEngagement.toFixed(0)}, Winner threshold: ${winnerThreshold.toFixed(0)}`);
 
@@ -111,7 +111,7 @@ async function collectLinkedInStats() {
 
             console.log(`Post ${postUrn}: ${impressions} impressions, ${engagement} engagement (${reactions} reactions, ${comments} comments) ${isWinner ? '🏆' : ''}`);
 
-            await sheets.writeStats('LinkedIn_Posted', post.rowIndex, {
+            await sheets.writeStats('LinkedIn Posted', post.rowIndex, {
                 impressions,
                 engagement,
                 isWinner
