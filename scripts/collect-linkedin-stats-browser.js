@@ -121,17 +121,32 @@ async function main() {
         // Match and update stats
         let updatedCount = 0;
         for (const sheetPost of postsNeedingStats) {
-            // Get post content from sheet to match
-            const sheetContent = await getPostContent(sheetPost.rowIndex);
-            if (!sheetContent) continue;
+            let match = null;
 
-            // Find matching scraped post
-            const match = findMatchingPost(sheetContent, posts);
+            // 1. Try matching by Platform Post ID (URN)
+            if (sheetPost.platformPostId) {
+                // sheetPost.platformPostId looks like "urn:li:share:12345"
+                // scraped post urn might be "urn:li:activity:12345" or "12345"
+                const sheetId = sheetPost.platformPostId.split(':').pop(); // Get last part (the number)
+                match = posts.find(p => p.urn && p.urn.includes(sheetId));
+                if (match) console.log(`Matched by ID: ${sheetPost.platformPostId}`);
+            }
+
+            // 2. Fallback to Content Matching
+            if (!match) {
+                // Get post content from sheet to match
+                const sheetContent = await getPostContent(sheetPost.rowIndex);
+                if (sheetContent) {
+                    match = findMatchingPost(sheetContent, posts);
+                    if (match) console.log(`Matched by Content: "${sheetContent.substring(0, 30)}..."`);
+                }
+            }
+
             if (match) {
                 const engagement = match.reactions + match.comments;
                 const isWinner = engagement >= winnerThreshold;
 
-                console.log(`Matched: "${sheetContent.substring(0, 40)}..." -> ${match.impressions} imp, ${engagement} eng ${isWinner ? '🏆' : ''}`);
+                console.log(`  -> ${match.impressions} imp, ${engagement} eng ${isWinner ? '🏆' : ''}`);
 
                 await sheets.writeStats('LinkedIn Posted', sheetPost.rowIndex, {
                     impressions: match.impressions,
@@ -175,6 +190,10 @@ async function scrapePostStats(page) {
         try {
             const post = postElements[i];
 
+            // Get URN (Post ID)
+            // Often in data-urn="urn:li:activity:12345"
+            const urn = await post.getAttribute('data-urn').catch(() => null);
+
             // Get post text content
             const textContent = await post.locator('.feed-shared-update-v2__description, .break-words').first().textContent().catch(() => '');
 
@@ -202,6 +221,7 @@ async function scrapePostStats(page) {
 
             if (textContent.trim()) {
                 posts.push({
+                    urn: urn,
                     content: textContent.trim().substring(0, 200),
                     impressions,
                     reactions,
@@ -251,6 +271,7 @@ async function getPostContent(rowIndex) {
  * Find matching scraped post by content similarity
  */
 function findMatchingPost(sheetContent, scrapedPosts) {
+    if (!sheetContent) return null;
     const normalizedSheet = normalizeText(sheetContent);
 
     for (const post of scrapedPosts) {
@@ -264,8 +285,10 @@ function findMatchingPost(sheetContent, scrapedPosts) {
         // Fuzzy match - check if 80% of words match
         const sheetWords = normalizedSheet.split(/\s+/).slice(0, 20);
         const scrapedWords = normalizedScraped.split(/\s+/).slice(0, 20);
-        const matchCount = sheetWords.filter(w => scrapedWords.includes(w)).length;
 
+        if (sheetWords.length === 0) continue;
+
+        const matchCount = sheetWords.filter(w => scrapedWords.includes(w)).length;
         if (matchCount / sheetWords.length >= 0.8) {
             return post;
         }
@@ -278,6 +301,7 @@ function findMatchingPost(sheetContent, scrapedPosts) {
  * Normalize text for comparison
  */
 function normalizeText(text) {
+    if (!text) return '';
     return text
         .toLowerCase()
         .replace(/[^\w\s]/g, '')
