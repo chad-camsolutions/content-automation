@@ -15,7 +15,7 @@ const { chromium } = require('playwright');
 const sheets = require('./sheets-helper');
 
 const PROFILE_URL = 'https://www.linkedin.com/in/chad-van-der-walt-87b506314/recent-activity/all/';
-const MAX_POSTS_TO_SCRAPE = 30; // Reduced to minimize exposure
+const MAX_POSTS_TO_SCRAPE = 60; // Increased to catch older posts
 
 // Human-like delay (random between min and max ms)
 function humanDelay(minMs = 1000, maxMs = 3000) {
@@ -83,9 +83,9 @@ async function main() {
             await humanDelay(3000, 5000);
         }
 
-        // Slow, human-like scrolling (3 scrolls only, with random delays)
+        // Slow, human-like scrolling (15 scrolls to load more history)
         console.log('Scrolling slowly to load posts...');
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 15; i++) {
             // Scroll down by a random amount
             const scrollAmount = 600 + Math.floor(Math.random() * 400);
             await page.evaluate((amt) => window.scrollBy(0, amt), scrollAmount);
