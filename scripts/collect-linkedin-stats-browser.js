@@ -221,8 +221,14 @@ async function scrapePostStats(page) {
                     ['data-urn', 'data-id', 'id'].forEach(attr => {
                         if (node.hasAttribute(attr)) results.push(node.getAttribute(attr));
                     });
-                    // Check hrefs
-                    if (node.href && node.href.includes('urn:li:')) results.push(node.href);
+                    // Check hrefs (safely)
+                    try {
+                        if (node.href && typeof node.href === 'string' && node.href.includes('urn:li:')) {
+                            results.push(node.href);
+                        }
+                    } catch (e) {
+                        // Ignore elements with weird href attributes (e.g. SVG)
+                    }
                 }
                 return results;
             });
