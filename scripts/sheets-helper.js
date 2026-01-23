@@ -60,7 +60,36 @@ async function getPendingPosts(tabName, limit = 7) {
 }
 
 /**
- * Mark a post as posted
+ * Copy a row to another tab (append)
+ */
+async function copyRowToTab(sourceTab, targetTab, rowIndex) {
+    const sheets = await getSheetsClient();
+    const spreadsheetId = process.env.SPREADSHEET_ID;
+
+    // Get the row data (cols A through J)
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `'${sourceTab}'!A${rowIndex}:J${rowIndex}`
+    });
+
+    const rowValues = response.data.values;
+    if (!rowValues || rowValues.length === 0) return;
+
+    // Append to target tab
+    await sheets.spreadsheets.values.append({
+        spreadsheetId,
+        range: `'${targetTab}'!A:A`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+            values: rowValues
+        }
+    });
+
+    console.log(`Copied row ${rowIndex} from ${sourceTab} to ${targetTab}`);
+}
+
+/**
+ * Mark a post as posted and copy to Posted tab
  * @param {string} tabName - Queue tab name
  * @param {number} rowIndex - Row to update
  * @param {string} platformPostId - ID from X/LinkedIn
@@ -81,6 +110,15 @@ async function markAsPosted(tabName, rowIndex, platformPostId) {
     });
 
     console.log(`Marked row ${rowIndex} as posted with ID ${platformPostId}`);
+
+    // Copy to Posted tab immediately
+    // e.g. 'X Queue' -> 'X Posted'
+    const postedTabName = tabName.replace('Queue', 'Posted');
+    try {
+        await copyRowToTab(tabName, postedTabName, rowIndex);
+    } catch (error) {
+        console.error(`Failed to copy to ${postedTabName}:`, error.message);
+    }
 }
 
 /**
@@ -173,10 +211,25 @@ async function getAverageEngagement(postedTabName) {
     return numbers.reduce((a, b) => a + b, 0) / numbers.length;
 }
 
+/**
+ * Get all raw rows from a tab
+ */
+async function getRawRows(tabName) {
+    const sheets = await getSheetsClient();
+    const spreadsheetId = process.env.SPREADSHEET_ID;
+    const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `'${tabName}'!A:J`
+    });
+    return response.data.values || [];
+}
+
 module.exports = {
     getPendingPosts,
     markAsPosted,
     getPostsNeedingStats,
     writeStats,
-    getAverageEngagement
+    getAverageEngagement,
+    copyRowToTab,
+    getRawRows
 };

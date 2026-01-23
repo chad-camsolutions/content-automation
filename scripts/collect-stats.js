@@ -63,6 +63,15 @@ async function collectXStats() {
                 isWinner
             });
 
+            if (isWinner) {
+                try {
+                    await sheets.copyRowToTab('X Posted', 'X Winners', post.rowIndex);
+                    console.log(`  -> 🏆 Winner moved to X Winners`);
+                } catch (error) {
+                    console.error(`  -> Failed to copy winner: ${error.message}`);
+                }
+            }
+
             await sleep(1000);
 
         } catch (error) {
@@ -116,6 +125,15 @@ async function collectLinkedInStats() {
                 engagement,
                 isWinner
             });
+
+            if (isWinner) {
+                try {
+                    await sheets.copyRowToTab('LinkedIn Posted', 'LinkedIn Winners', post.rowIndex);
+                    console.log(`  -> 🏆 Winner moved to LinkedIn Winners`);
+                } catch (error) {
+                    console.error(`  -> Failed to copy winner: ${error.message}`);
+                }
+            }
 
             await sleep(1500); // Slightly longer delay for LinkedIn rate limits
 
