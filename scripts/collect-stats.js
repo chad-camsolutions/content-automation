@@ -109,7 +109,7 @@ async function collectLinkedInStats() {
 
             const impressions = stats.impressions;
             const engagement = stats.reactions + stats.comments;
-            const isWinner = engagement >= winnerThreshold || (avgEngagement === 0 && engagement > 0);
+            const isWinner = engagement > 0 && engagement >= winnerThreshold;
 
             console.log(`Post ${postUrn}: ${impressions} impressions, ${engagement} engagement (${stats.reactions} reactions, ${stats.comments} comments) ${isWinner ? '🏆' : ''}`);
 
