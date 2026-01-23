@@ -152,7 +152,7 @@ async function fetchLinkedInPostStats(accessToken, postUrn) {
     const response = await fetch(url, {
         headers: {
             'Authorization': `Bearer ${accessToken}`,
-            'LinkedIn-Version': '202501',
+
             'X-Restli-Protocol-Version': '2.0.0'
         }
     });
