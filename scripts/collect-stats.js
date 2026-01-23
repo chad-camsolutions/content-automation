@@ -30,13 +30,13 @@ async function collectXStats() {
     });
 
     // Get posts needing stats
-    const posts = await sheets.getPostsNeedingStats('X Posted');
+    const posts = await sheets.getPostsNeedingStats('X_Posted');
     console.log(`Found ${posts.length} posts needing stats`);
 
     if (posts.length === 0) return;
 
     // Get average for winner calculation
-    const avgEngagement = await sheets.getAverageEngagement('X Posted');
+    const avgEngagement = await sheets.getAverageEngagement('X_Posted');
     const winnerThreshold = avgEngagement * 2;
     console.log(`Average engagement: ${avgEngagement.toFixed(0)}, Winner threshold: ${winnerThreshold.toFixed(0)}`);
 
@@ -57,7 +57,7 @@ async function collectXStats() {
 
             console.log(`Tweet ${post.platformPostId}: ${metrics.impression_count} impressions, ${engagement} engagement ${isWinner ? '🏆' : ''}`);
 
-            await sheets.writeStats('X Posted', post.rowIndex, {
+            await sheets.writeStats('X_Posted', post.rowIndex, {
                 impressions: metrics.impression_count || 0,
                 engagement,
                 isWinner
@@ -81,55 +81,132 @@ async function collectLinkedInStats() {
     }
 
     // Get posts needing stats
-    const posts = await sheets.getPostsNeedingStats('LinkedIn Posted');
+    const posts = await sheets.getPostsNeedingStats('LinkedIn_Posted');
     console.log(`Found ${posts.length} posts needing stats`);
 
     if (posts.length === 0) return;
 
     // Get average for winner calculation
-    const avgEngagement = await sheets.getAverageEngagement('LinkedIn Posted');
+    const avgEngagement = await sheets.getAverageEngagement('LinkedIn_Posted');
     const winnerThreshold = avgEngagement * 2;
     console.log(`Average engagement: ${avgEngagement.toFixed(0)}, Winner threshold: ${winnerThreshold.toFixed(0)}`);
 
     for (const post of posts) {
         try {
-            // LinkedIn stats API
-            const response = await fetch(
-                `https://api.linkedin.com/v2/socialActions/${encodeURIComponent(post.platformPostId)}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'X-Restli-Protocol-Version': '2.0.0'
-                    }
-                }
-            );
+            // Use the memberCreatorPostAnalytics API for proper stats
+            // The post ID format is urn:li:ugcPost:123 or urn:li:share:123
+            const postUrn = post.platformPostId;
 
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
-            }
+            // Fetch impressions
+            const impressions = await fetchLinkedInMetric(accessToken, postUrn, 'IMPRESSION');
 
-            const data = await response.json();
-            const engagement = (data.likesSummary?.totalLikes || 0) +
-                (data.commentsSummary?.totalFirstLevelComments || 0);
+            // Fetch reactions (likes)
+            const reactions = await fetchLinkedInMetric(accessToken, postUrn, 'REACTION');
 
-            // LinkedIn doesn't easily expose impressions via API
-            // We'll estimate or leave as 0
-            const isWinner = engagement >= winnerThreshold;
+            // Fetch comments
+            const comments = await fetchLinkedInMetric(accessToken, postUrn, 'COMMENT');
 
-            console.log(`Post ${post.platformPostId}: ${engagement} engagement ${isWinner ? '🏆' : ''}`);
+            const engagement = reactions + comments;
+            const isWinner = engagement >= winnerThreshold || (avgEngagement === 0 && engagement > 0);
 
-            await sheets.writeStats('LinkedIn Posted', post.rowIndex, {
-                impressions: 0, // LinkedIn API limitation
+            console.log(`Post ${postUrn}: ${impressions} impressions, ${engagement} engagement (${reactions} reactions, ${comments} comments) ${isWinner ? '🏆' : ''}`);
+
+            await sheets.writeStats('LinkedIn_Posted', post.rowIndex, {
+                impressions,
                 engagement,
                 isWinner
             });
 
-            await sleep(1000);
+            await sleep(1500); // Slightly longer delay for LinkedIn rate limits
 
         } catch (error) {
             console.error(`Failed to get stats for ${post.platformPostId}:`, error.message);
+
+            // If the new API fails, fallback to trying socialActions (legacy)
+            try {
+                const fallbackStats = await fetchLinkedInStatsFallback(accessToken, post.platformPostId);
+                if (fallbackStats) {
+                    await sheets.writeStats('LinkedIn_Posted', post.rowIndex, fallbackStats);
+                    console.log(`  -> Fallback succeeded: ${fallbackStats.engagement} engagement`);
+                }
+            } catch (fallbackError) {
+                console.error(`  -> Fallback also failed: ${fallbackError.message}`);
+            }
         }
     }
+}
+
+/**
+ * Fetch a specific metric from LinkedIn memberCreatorPostAnalytics API
+ * @param {string} accessToken - LinkedIn access token
+ * @param {string} postUrn - The post URN (e.g., urn:li:ugcPost:123)
+ * @param {string} metricType - IMPRESSION, REACTION, COMMENT, RESHARE, or MEMBERS_REACHED
+ * @returns {number} The metric count
+ */
+async function fetchLinkedInMetric(accessToken, postUrn, metricType) {
+    // Encode the URN for the entity parameter
+    // Format: entity=(ugc:urn%3Ali%3AugcPost%3A{id})
+    const encodedUrn = encodeURIComponent(postUrn);
+
+    // Determine the entity type prefix based on URN
+    let entityPrefix = 'ugc';
+    if (postUrn.includes('share')) {
+        entityPrefix = 'share';
+    }
+
+    const url = `https://api.linkedin.com/rest/memberCreatorPostAnalytics?q=entity&entity=(${entityPrefix}:${encodedUrn})&queryType=${metricType}`;
+
+    const response = await fetch(url, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'LinkedIn-Version': '202501',
+            'X-Restli-Protocol-Version': '2.0.0'
+        }
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`LinkedIn API error (${metricType}): ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    // Extract count from response
+    // Response format: { elements: [{ count: X, metricType: "IMPRESSION" }] }
+    if (data.elements && data.elements.length > 0) {
+        return data.elements[0].count || 0;
+    }
+
+    return 0;
+}
+
+/**
+ * Fallback to legacy socialActions API for older posts or if new API fails
+ */
+async function fetchLinkedInStatsFallback(accessToken, postUrn) {
+    const response = await fetch(
+        `https://api.linkedin.com/v2/socialActions/${encodeURIComponent(postUrn)}`,
+        {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'X-Restli-Protocol-Version': '2.0.0'
+            }
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error(`Fallback API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const engagement = (data.likesSummary?.totalLikes || 0) +
+        (data.commentsSummary?.totalFirstLevelComments || 0);
+
+    return {
+        impressions: 0,
+        engagement,
+        isWinner: false // Let the main logic determine this
+    };
 }
 
 function sleep(ms) {
