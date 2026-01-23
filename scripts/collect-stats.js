@@ -147,8 +147,9 @@ async function fetchLinkedInMetric(accessToken, postUrn, metricType) {
     // Encode the URN for the entity parameter
     const encodedUrn = encodeURIComponent(postUrn);
 
-    // LinkedIn memberCreatorPostAnalytics takes the URN directly in 'entity' parameter
-    const url = `https://api.linkedin.com/rest/memberCreatorPostAnalytics?q=entity&entity=${encodedUrn}&queryType=${metricType}`;
+    // LinkedIn memberCreatorPostAnalytics requires the URN to be wrapped in (ugc:)
+    // even if it's a share URN, as we are querying for post analytics
+    const url = `https://api.linkedin.com/rest/memberCreatorPostAnalytics?q=entity&entity=(ugc:${encodedUrn})&queryType=${metricType}`;
 
     const response = await fetch(url, {
         headers: {
