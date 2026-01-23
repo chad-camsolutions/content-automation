@@ -97,6 +97,8 @@ async function main() {
 
         const posts = await scrapePostStats(page);
         console.log(`Found ${posts.length} posts with stats`);
+        console.log('Scraped URNs:', posts.map(p => p.urn).join(', '));
+
 
         if (posts.length === 0) {
             console.log('No posts found. Check if page loaded correctly.');
@@ -126,10 +128,17 @@ async function main() {
             // 1. Try matching by Platform Post ID (URN)
             if (sheetPost.platformPostId) {
                 // sheetPost.platformPostId looks like "urn:li:share:12345"
-                // scraped post urn might be "urn:li:activity:12345" or "12345"
                 const sheetId = sheetPost.platformPostId.split(':').pop(); // Get last part (the number)
-                match = posts.find(p => p.urn && p.urn.includes(sheetId));
-                if (match) console.log(`Matched by ID: ${sheetPost.platformPostId}`);
+                console.log(`  Checking ID match for ${sheetId}...`);
+
+                // Check main URN AND any deep URNs found
+                match = posts.find(p => {
+                    if (p.urn && p.urn.includes(sheetId)) return true;
+                    if (p.deepUrns && p.deepUrns.some(u => u.includes(sheetId))) return true;
+                    return false;
+                });
+
+                if (match) console.log(`  -> Matched by ID: ${sheetPost.platformPostId}`);
             }
 
             // 2. Fallback to Content Matching
@@ -137,8 +146,10 @@ async function main() {
                 // Get post content from sheet to match
                 const sheetContent = await getPostContent(sheetPost.rowIndex);
                 if (sheetContent) {
+                    console.log(`  Checking Content match for row ${sheetPost.rowIndex}...`);
                     match = findMatchingPost(sheetContent, posts);
-                    if (match) console.log(`Matched by Content: "${sheetContent.substring(0, 30)}..."`);
+                    if (match) console.log(`  -> Matched by Content: "${sheetContent.substring(0, 30)}..."`);
+                    else console.log(`  -> No content match found for: "${sheetContent.substring(0, 30)}..."`);
                 }
             }
 
@@ -190,9 +201,31 @@ async function scrapePostStats(page) {
         try {
             const post = postElements[i];
 
+            // Expand "See more" if present to get full text
+            const seeMore = post.locator('.feed-shared-inline-show-more-text__see-more-less-toggle').first();
+            if (await seeMore.isVisible().catch(() => false)) {
+                await seeMore.click().catch(() => { });
+                await page.waitForTimeout(500); // Short wait via page timeout instead of humanDelay for speed
+            }
+
             // Get URN (Post ID)
-            // Often in data-urn="urn:li:activity:12345"
             const urn = await post.getAttribute('data-urn').catch(() => null);
+
+            // Get ALL attributes from the element and children to find nested IDs
+            const deepUrns = await post.evaluate((el) => {
+                const results = [];
+                // Check all elements inside this post
+                const all = el.querySelectorAll('*');
+                for (const node of all) {
+                    // Check common attributes for URNs
+                    ['data-urn', 'data-id', 'id'].forEach(attr => {
+                        if (node.hasAttribute(attr)) results.push(node.getAttribute(attr));
+                    });
+                    // Check hrefs
+                    if (node.href && node.href.includes('urn:li:')) results.push(node.href);
+                }
+                return results;
+            });
 
             // Get post text content
             const textContent = await post.locator('.feed-shared-update-v2__description, .break-words').first().textContent().catch(() => '');
@@ -205,7 +238,7 @@ async function scrapePostStats(page) {
             const commentsText = await post.locator('button[aria-label*="comment"], .social-details-social-counts__comments').textContent().catch(() => '0');
             const comments = parseMetricNumber(commentsText);
 
-            // Get impressions (may not be visible on all posts)
+            // Get impressions
             let impressions = 0;
             const analyticsButton = await post.locator('[aria-label*="impression"], .analytics-entry-point').first();
             if (await analyticsButton.isVisible().catch(() => false)) {
@@ -213,7 +246,6 @@ async function scrapePostStats(page) {
                 impressions = parseMetricNumber(impText);
             }
 
-            // Try alternate impression selector
             if (impressions === 0) {
                 const impAlt = await post.locator('.social-details-social-counts__item--impressions').textContent().catch(() => '0');
                 impressions = parseMetricNumber(impAlt);
@@ -222,7 +254,8 @@ async function scrapePostStats(page) {
             if (textContent.trim()) {
                 posts.push({
                     urn: urn,
-                    content: textContent.trim().substring(0, 200),
+                    deepUrns, // Store deep URNs for checking
+                    content: textContent.trim(), // Full content now
                     impressions,
                     reactions,
                     comments

@@ -151,7 +151,7 @@ async function getPostsNeedingStats(postedTabName) {
             const postedDate = new Date(postedAt);
             const hoursSincePost = (now - postedDate) / (1000 * 60 * 60);
 
-            if (hoursSincePost >= 24) {
+            if (hoursSincePost >= 1) {
                 needStats.push({
                     rowIndex: i + 1,
                     platformPostId: row[headers.indexOf('Platform Post ID')] || ''

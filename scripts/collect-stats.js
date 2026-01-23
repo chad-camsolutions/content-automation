@@ -103,9 +103,20 @@ async function collectLinkedInStats() {
     for (const post of posts) {
         try {
             const postUrn = post.platformPostId;
+            let stats;
 
-            // Fetch all stats in one call using the Posts API
-            const stats = await fetchLinkedInPostStats(accessToken, postUrn);
+            try {
+                // Fetch all stats in one call using the Posts API
+                stats = await fetchLinkedInPostStats(accessToken, postUrn);
+            } catch (primaryError) {
+                console.warn(`Original stats fetch failed for ${postUrn}: ${primaryError.message}. Trying fallback...`);
+                try {
+                    stats = await fetchLinkedInStatsFallback(accessToken, postUrn);
+                } catch (fallbackError) {
+                    console.error(`Failed to get stats for ${postUrn} (Primary & Fallback):`, fallbackError.message);
+                    continue; // Skip processing this post
+                }
+            }
 
             const impressions = stats.impressions;
             const engagement = stats.reactions + stats.comments;
@@ -173,6 +184,40 @@ async function fetchLinkedInPostStats(accessToken, postUrn) {
 }
 
 
+
+/**
+ * Fallback: Fetch stats using socialMetadata (better for urn:li:share)
+ */
+async function fetchLinkedInStatsFallback(accessToken, postUrn) {
+    const encodedUrn = encodeURIComponent(postUrn);
+    const url = `https://api.linkedin.com/v2/socialMetadata/${encodedUrn}`;
+
+    const response = await fetch(url, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'X-Restli-Protocol-Version': '2.0.0'
+        }
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`LinkedIn Fallback API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    // Calculate total reactions from summary
+    let reactions = 0;
+    if (data.reactionSummaries) {
+        reactions = Object.values(data.reactionSummaries).reduce((sum, r) => sum + (r.count || 0), 0);
+    }
+
+    return {
+        impressions: 0, // Not available via socialMetadata
+        reactions: reactions,
+        comments: data.commentSummary ? (data.commentSummary.count || 0) : 0
+    };
+}
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
