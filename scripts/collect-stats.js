@@ -102,23 +102,16 @@ async function collectLinkedInStats() {
 
     for (const post of posts) {
         try {
-            // Use the memberCreatorPostAnalytics API for proper stats
-            // The post ID format is urn:li:ugcPost:123 or urn:li:share:123
             const postUrn = post.platformPostId;
 
-            // Fetch impressions
-            const impressions = await fetchLinkedInMetric(accessToken, postUrn, 'IMPRESSION');
+            // Fetch all stats in one call using the Posts API
+            const stats = await fetchLinkedInPostStats(accessToken, postUrn);
 
-            // Fetch reactions (likes)
-            const reactions = await fetchLinkedInMetric(accessToken, postUrn, 'REACTION');
-
-            // Fetch comments
-            const comments = await fetchLinkedInMetric(accessToken, postUrn, 'COMMENT');
-
-            const engagement = reactions + comments;
+            const impressions = stats.impressions;
+            const engagement = stats.reactions + stats.comments;
             const isWinner = engagement >= winnerThreshold || (avgEngagement === 0 && engagement > 0);
 
-            console.log(`Post ${postUrn}: ${impressions} impressions, ${engagement} engagement (${reactions} reactions, ${comments} comments) ${isWinner ? '🏆' : ''}`);
+            console.log(`Post ${postUrn}: ${impressions} impressions, ${engagement} engagement (${stats.reactions} reactions, ${stats.comments} comments) ${isWinner ? '🏆' : ''}`);
 
             await sheets.writeStats('LinkedIn Posted', post.rowIndex, {
                 impressions,
@@ -139,35 +132,54 @@ async function collectLinkedInStats() {
 
         } catch (error) {
             console.error(`Failed to get stats for ${post.platformPostId}:`, error.message);
-
-            // If the new API fails, fallback to trying socialActions (legacy)
-            try {
-                const fallbackStats = await fetchLinkedInStatsFallback(accessToken, post.platformPostId);
-                if (fallbackStats) {
-                    await sheets.writeStats('LinkedIn_Posted', post.rowIndex, fallbackStats);
-                    console.log(`  -> Fallback succeeded: ${fallbackStats.engagement} engagement`);
-                }
-            } catch (fallbackError) {
-                console.error(`  -> Fallback also failed: ${fallbackError.message}`);
-            }
         }
     }
 }
 
 /**
- * Fetch a specific metric from LinkedIn memberCreatorPostAnalytics API
+ * Fetch LinkedIn post stats using the Posts API
  * @param {string} accessToken - LinkedIn access token
- * @param {string} postUrn - The post URN (e.g., urn:li:ugcPost:123)
- * @param {string} metricType - IMPRESSION, REACTION, COMMENT, RESHARE, or MEMBERS_REACHED
- * @returns {number} The metric count
+ * @param {string} postUrn - The post URN (urn:li:share:123 or urn:li:ugcPost:123)
+ * @returns {object} Stats object with impressions, reactions, comments
  */
-async function fetchLinkedInMetric(accessToken, postUrn, metricType) {
-    // Encode the URN for the entity parameter
+async function fetchLinkedInPostStats(accessToken, postUrn) {
+    // Use the Posts API with analytics projection
     const encodedUrn = encodeURIComponent(postUrn);
 
-    // LinkedIn memberCreatorPostAnalytics requires the URN to be wrapped in (ugc:)
-    // even if it's a share URN, as we are querying for post analytics
-    const url = `https://api.linkedin.com/rest/memberCreatorPostAnalytics?q=entity&entity=(ugc:${encodedUrn})&queryType=${metricType}`;
+    // Try the posts API to get the post with analytics
+    const url = `https://api.linkedin.com/rest/posts/${encodedUrn}`;
+
+    const response = await fetch(url, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'LinkedIn-Version': '202501',
+            'X-Restli-Protocol-Version': '2.0.0'
+        }
+    });
+
+    if (!response.ok) {
+        // Try alternative: socialActions for basic engagement counts
+        return await fetchLinkedInSocialActions(accessToken, postUrn);
+    }
+
+    const data = await response.json();
+
+    // Extract stats from response
+    return {
+        impressions: data.numImpressions || 0,
+        reactions: data.numLikes || data.numReactions || 0,
+        comments: data.numComments || 0
+    };
+}
+
+/**
+ * Fallback: Try socialMetadata endpoint for engagement stats
+ */
+async function fetchLinkedInSocialActions(accessToken, postUrn) {
+    const encodedUrn = encodeURIComponent(postUrn);
+
+    // Try the socialMetadata endpoint
+    const url = `https://api.linkedin.com/rest/socialMetadata/${encodedUrn}`;
 
     const response = await fetch(url, {
         headers: {
@@ -179,46 +191,15 @@ async function fetchLinkedInMetric(accessToken, postUrn, metricType) {
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`LinkedIn API error (${metricType}): ${response.status} - ${errorText}`);
+        throw new Error(`LinkedIn API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-
-    // Extract count from response
-    // Response format: { elements: [{ count: X, metricType: "IMPRESSION" }] }
-    if (data.elements && data.elements.length > 0) {
-        return data.elements[0].count || 0;
-    }
-
-    return 0;
-}
-
-/**
- * Fallback to legacy socialActions API for older posts or if new API fails
- */
-async function fetchLinkedInStatsFallback(accessToken, postUrn) {
-    const response = await fetch(
-        `https://api.linkedin.com/v2/socialActions/${encodeURIComponent(postUrn)}`,
-        {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'X-Restli-Protocol-Version': '2.0.0'
-            }
-        }
-    );
-
-    if (!response.ok) {
-        throw new Error(`Fallback API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const engagement = (data.likesSummary?.totalLikes || 0) +
-        (data.commentsSummary?.totalFirstLevelComments || 0);
 
     return {
-        impressions: 0,
-        engagement,
-        isWinner: false // Let the main logic determine this
+        impressions: 0, // Not available via this endpoint
+        reactions: data.totalReactionCount || data.likeCount || 0,
+        comments: data.totalCommentCount || data.commentCount || 0
     };
 }
 
