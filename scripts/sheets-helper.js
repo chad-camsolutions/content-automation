@@ -8,6 +8,12 @@ const { google } = require('googleapis');
 // Initialize auth from service account JSON in environment
 function getAuth() {
     const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+
+    // Sanitize private key newlines (fixes OpenSSL error)
+    if (credentials.private_key) {
+        credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+    }
+
     return new google.auth.GoogleAuth({
         credentials,
         scopes: ['https://www.googleapis.com/auth/spreadsheets']
