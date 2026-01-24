@@ -180,6 +180,17 @@ async function main() {
 
         console.log(`\nUpdated stats for ${updatedCount} posts`);
 
+    } catch (error) {
+        console.error('Error during browser execution:', error.message);
+        try {
+            if (typeof page !== 'undefined') {
+                console.log('Capturing error screenshot...');
+                await page.screenshot({ path: 'error-screenshot.png', fullPage: true });
+            }
+        } catch (screenshotError) {
+            console.error('Failed to capture error screenshot:', screenshotError.message);
+        }
+        throw error; // Re-throw to fail the workflow
     } finally {
         await browser.close();
     }
@@ -348,7 +359,9 @@ function normalizeText(text) {
         .trim();
 }
 
-main().catch(error => {
+main().catch(async error => {
     console.error('Fatal error:', error.message);
+    // Try to capture screenshot if browser is still active? 
+    // (Difficult since 'page' isn't in scope here, but we can rely on try/catch blocks inside main)
     process.exit(1);
 });

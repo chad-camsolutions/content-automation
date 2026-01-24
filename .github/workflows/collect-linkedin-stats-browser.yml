@@ -29,3 +29,11 @@ jobs:
           LINKEDIN_SESSION_COOKIE: ${{ secrets.LINKEDIN_SESSION_COOKIE }}
           GOOGLE_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_SERVICE_ACCOUNT }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          
+      - name: Upload Debug Screenshot (on failure)
+        if: failure() || success() # Upload even if success if the file exists (for "no posts found" case)
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: '*.png'
+          retention-days: 5
