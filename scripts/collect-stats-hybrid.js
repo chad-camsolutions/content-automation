@@ -16,12 +16,28 @@ async function main() {
     let browser;
     try {
         browser = await chromium.launch({
-            headless: true
+            headless: true,
+            args: [
+                '--disable-blink-features=AutomationControlled',
+                '--no-sandbox',
+                '--disable-setuid-sandbox'
+            ]
         });
 
         const context = await browser.newContext({
             userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            viewport: { width: 1280, height: 800 }
+            viewport: { width: 1280, height: 800 },
+            locale: 'en-US',
+            timezoneId: 'Africa/Johannesburg', // Match the user's likely location (SAST) to reduce suspicion
+            geolocation: { longitude: 28.0473, latitude: -26.2041 }, // Johannesburg approximate
+            permissions: ['geolocation']
+        });
+
+        // Evasion: Remove 'navigator.webdriver' property
+        await context.addInitScript(() => {
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined,
+            });
         });
 
         // Add initial li_at cookie to start the session
