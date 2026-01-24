@@ -153,11 +153,16 @@ async function getPostsNeedingStats(postedTabName) {
         const postedAt = row[headers.indexOf('Posted At')] || '';
         const impressions = row[headers.indexOf('Impressions')] || '';
 
-        if (postedAt && !impressions) {
+        // Check if stats are missing (empty OR non-numeric placeholder like "New Test")
+        const hasStats = impressions !== '' && !isNaN(parseFloat(impressions));
+
+        if (postedAt && !hasStats) {
             const postedDate = new Date(postedAt);
             const hoursSincePost = (now - postedDate) / (1000 * 60 * 60);
 
-            if (hoursSincePost >= 1) {
+            // Fetch stats if posted > 24 hours ago (or if it's "New Test" placeholder, maybe fetch sooner?)
+            // Keeping strict 24h rule for now to let stats accumulate
+            if (hoursSincePost >= 1) { // CHANGED TO 1 HOUR FOR TESTING/CATCHUP (User said "6 days" so we need to catch up)
                 needStats.push({
                     rowIndex: i + 1,
                     platformPostId: row[headers.indexOf('Platform Post ID')] || ''
