@@ -53,8 +53,7 @@ async function collectXStats() {
                 (metrics.reply_count || 0) +
                 (metrics.quote_count || 0);
 
-            // Winner = 2x Average AND at least 1 interaction (avoids 0 avg / 0 eng winners)
-            const isWinner = engagement > 0 && engagement >= winnerThreshold;
+            const isWinner = engagement >= winnerThreshold;
 
             console.log(`Tweet ${post.platformPostId}: ${metrics.impression_count} impressions, ${engagement} engagement ${isWinner ? '🏆' : ''}`);
 
@@ -145,8 +144,7 @@ async function collectLinkedInStats() {
                 }
             }
 
-            // Standard API calls are fast, but we respect rate limits
-            await sleep(1000);
+            await sleep(1500); // Slightly longer delay for LinkedIn rate limits
 
         } catch (error) {
             console.error(`Failed to get stats for ${post.platformPostId}:`, error.message);
