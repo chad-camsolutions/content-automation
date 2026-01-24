@@ -52,16 +52,20 @@ async function main() {
 
         const page = await context.newPage();
 
-        // Block heavy resources
-        await page.route('**/*.{png,jpg,jpeg,gif,webp,svg,woff,woff2,ttf,eot,css,mp4}', route => route.abort());
+        // Block heavy resources (images, media, fonts) but ALLOW CSS/JS/XHR to ensure page loads correctly
+        await page.route('**/*.{png,jpg,jpeg,gif,webp,svg,woff,woff2,ttf,eot,mp4,mp3}', route => route.abort());
 
         console.log('Navigating to LinkedIn to establish session...');
         try {
             // We just need to hit the domain to set the session state
+            // waitUntil: 'commit' is faster/safer if we just want to establish context
             await page.goto('https://www.linkedin.com/feed/', { waitUntil: 'domcontentloaded', timeout: 30000 });
         } catch (e) {
-            console.log('Navigation timeout/error, but proceeding if cookies set...');
+            console.log(`Navigation partial error (${e.message}), waiting for stability...`);
         }
+
+        // Wait for stability
+        await page.waitForTimeout(5000);
 
         console.log('Session established. Fetching "Me" profile for URN...');
 
