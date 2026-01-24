@@ -8,7 +8,7 @@ const { chromium } = require('playwright');
 const sheets = require('./sheets-helper');
 
 async function main() {
-    console.log('Starting LinkedIn stats collection (Hybrid - API Mode)...');
+    console.log('Starting LinkedIn stats collection (Hybrid - Navigation Mode)...');
 
     const cookie = process.env.LINKEDIN_SESSION_COOKIE;
     if (!cookie) throw new Error('LINKEDIN_SESSION_COOKIE is required');
@@ -21,22 +21,58 @@ async function main() {
 
         const context = await browser.newContext({
             userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            viewport: { width: 1280, height: 800 }
         });
 
-        // Parse CSRF token
-        let csrfToken = 'ajax:4624395368366964243'; // Fallback
-        const csrfMatch = cookie.match(/JSESSIONID="?([^";]+)"?/);
-        if (csrfMatch) csrfToken = csrfMatch[1].replace(/"/g, '');
+        // Add initial li_at cookie to start the session
+        const initialCookies = [{
+            name: 'li_at',
+            value: cookie.split(';')[0].replace('li_at=', '').trim(),
+            domain: '.linkedin.com',
+            path: '/',
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
+        }];
+
+        await context.addCookies(initialCookies);
+        const page = await context.newPage();
+
+        // Block heavy resources
+        await page.route('**/*.{png,jpg,jpeg,gif,webp,svg,woff,woff2,ttf,eot,mp4,mp3}', route => route.abort());
+
+        console.log('Navigating to LinkedIn to generate valid session cookies...');
+        try {
+            await page.goto('https://www.linkedin.com/feed/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+        } catch (e) {
+            console.log(`Navigation note: ${e.message} (proceeding to check cookies)`);
+        }
+
+        // Wait for stability and cookie setting
+        await page.waitForTimeout(5000);
+
+        // Harvest REAL cookies from the authenticated context
+        const contextCookies = await context.cookies();
+        const liAtCookie = contextCookies.find(c => c.name === 'li_at');
+        const jSessionCookie = contextCookies.find(c => c.name === 'JSESSIONID');
+
+        if (!jSessionCookie) {
+            console.error('Available Cookies:', contextCookies.map(c => c.name));
+            throw new Error('Failed to establish session: JSESSIONID missing after navigation.');
+        }
+
+        const csrfToken = jSessionCookie.value.replace(/"/g, '');
+        console.log(`Session Active. CSRF Token: ${csrfToken.substring(0, 10)}...`);
 
         const headers = {
             'x-li-lang': 'en_US',
             'accept': 'application/vnd.linkedin.normalized+json+2.1',
             'Csrf-Token': csrfToken,
-            'Cookie': `li_at=${cookie.split(';')[0].replace('li_at=', '').trim()}; JSESSIONID="${csrfToken}";`
+            // Reconstruct cookie string from the browser's valid set to ensure consistency
+            'Cookie': contextCookies.map(c => `${c.name}=${c.value}`).join('; ')
         };
 
         const request = context.request;
-
         console.log('Sending API request via Playwright network stack...');
 
         const meRes = await request.get('https://www.linkedin.com/voyager/api/me', { headers });
@@ -44,7 +80,7 @@ async function main() {
         if (!meRes.ok()) {
             console.error(`Status: ${meRes.status()} ${meRes.statusText()}`);
             console.error(`Body: ${await meRes.text()}`);
-            throw new Error('API Authentication Failed (Cookie likely invalid)');
+            throw new Error('API Authentication Failed (Status ' + meRes.status() + ')');
         }
 
         const me = await meRes.json();
@@ -57,10 +93,10 @@ async function main() {
         if (!feedRes.ok()) throw new Error(`Feed API Failed: ${feedRes.status()}`);
 
         const feedData = await feedRes.json();
+        const postStats = new Map();
 
         console.log(`Feed fetched. Found ${feedData.elements ? feedData.elements.length : 0} items.`);
 
-        const postStats = new Map();
         if (feedData.elements) {
             feedData.elements.forEach(item => {
                 let urn = item.urn;
