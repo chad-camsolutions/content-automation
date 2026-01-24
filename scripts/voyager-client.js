@@ -21,12 +21,26 @@ class VoyagerClient {
     }
 
     extractCsrf(cookie) {
-        // Voyager usually accepts specific CSRF tokens, but sometimes just having the cookie is enough
-        // or passing "ajax:123456789" if JSESSIONID matches. 
-        // For simple GETs, often just the cookie + basic headers work.
-        // We will try to parse JSESSIONID from the cookie string if present
+        // Debugging cookie format
+        if (cookie.length < 20) console.warn('Warning: Cookie seems very short!');
+
+        // Match JSESSIONID
         const match = cookie.match(/JSESSIONID="([^"]+)"/);
-        return match ? match[1] : 'ajax:4624395368366964243'; // Fallback generic token often works
+
+        if (match) {
+            console.log('Extracted CSRF token from JSESSIONID');
+            return match[1];
+        }
+
+        // Fallback or Try to parse it if it's without quotes
+        const matchSimple = cookie.match(/JSESSIONID=([^;]+)/);
+        if (matchSimple) {
+            console.log('Extracted CSRF token from JSESSIONID (simple format)');
+            return matchSimple[1].replace(/"/g, '');
+        }
+
+        console.warn('Could not extract JSESSIONID from cookie string. Using hardcoded fallback (likely to fail 403).');
+        return 'ajax:4624395368366964243';
     }
 
     async getMyself() {
