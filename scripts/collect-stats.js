@@ -114,8 +114,13 @@ async function collectLinkedInStats() {
                 try {
                     stats = await fetchLinkedInStatsFallback(accessToken, postUrn);
                 } catch (fallbackError) {
-                    console.error(`Failed to get stats for ${postUrn} (Primary & Fallback):`, fallbackError.message);
-                    continue; // Skip processing this post
+                    console.warn(`Fallback (socialMetadata) failed: ${fallbackError.message}. Trying socialActions...`);
+                    try {
+                        stats = await fetchLinkedInStatsSocialActions(accessToken, postUrn);
+                    } catch (finalError) {
+                        console.error(`Failed to get stats for ${postUrn} (All methods):`, finalError.message);
+                        continue; // Skip processing this post
+                    }
                 }
             }
 
@@ -218,6 +223,34 @@ async function fetchLinkedInStatsFallback(accessToken, postUrn) {
         impressions: 0, // Not available via socialMetadata
         reactions: reactions,
         comments: data.commentSummary ? (data.commentSummary.count || 0) : 0
+    };
+}
+
+/**
+ * Fallback 2: Fetch stats using socialActions (standard, often works)
+ */
+async function fetchLinkedInStatsSocialActions(accessToken, postUrn) {
+    const encodedUrn = encodeURIComponent(postUrn);
+    const url = `https://api.linkedin.com/v2/socialActions/${encodedUrn}`;
+
+    const response = await fetch(url, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'X-Restli-Protocol-Version': '2.0.0'
+        }
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`LinkedIn SocialActions API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    return {
+        impressions: 0, // Not available via socialActions
+        reactions: data.likesSummary ? (data.likesSummary.totalLikes || 0) : 0,
+        comments: data.commentsSummary ? (data.commentsSummary.totalComments || 0) : 0
     };
 }
 
