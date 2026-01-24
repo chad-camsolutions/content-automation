@@ -17,8 +17,8 @@ const sheets = require('./sheets-helper');
 const PROFILE_URL = 'https://www.linkedin.com/in/chad-van-der-walt-87b506314/recent-activity/all/';
 const MAX_POSTS_TO_SCRAPE = 60; // Increased to catch older posts
 
-// Human-like delay (random between min and max ms)
-function humanDelay(minMs = 1000, maxMs = 3000) {
+// Human-like delay (Optimized for speed)
+function humanDelay(minMs = 500, maxMs = 1500) {
     const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
     return new Promise(resolve => setTimeout(resolve, delay));
 }
@@ -48,6 +48,16 @@ async function main() {
             locale: 'en-US',
             timezoneId: 'Africa/Johannesburg'
         });
+
+        // OPTIMIZATION: Block images, fonts, and other heavy resources
+        await context.route('**/*.{png,jpg,jpeg,gif,webp,svg,woff,woff2,ttf,eot,css}', route => route.abort());
+
+        // Human-like delay (Optimized for speed)
+        // Reduced from 1000-3000 to 500-1500
+        function humanDelay(minMs = 500, maxMs = 1500) {
+            const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+            return new Promise(resolve => setTimeout(resolve, delay));
+        }
 
         // Set the session cookie
         await context.addCookies([{

@@ -14,7 +14,8 @@ async function main() {
     await collectXStats();
 
     // Collect LinkedIn stats
-    await collectLinkedInStats();
+    // NOTE: Disabled in favor of browser automation due to API permission limits for personal profiles
+    // await collectLinkedInStats();
 
     console.log('Stats collection complete!');
 }
