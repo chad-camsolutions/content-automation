@@ -8,7 +8,7 @@ const { chromium } = require('playwright');
 const sheets = require('./sheets-helper');
 
 async function main() {
-    console.log('Starting LinkedIn stats collection (Hybrid)...');
+    console.log('Starting LinkedIn stats collection (Hybrid - API Mode)...');
 
     const cookie = process.env.LINKEDIN_SESSION_COOKIE;
     if (!cookie) throw new Error('LINKEDIN_SESSION_COOKIE is required');
@@ -19,79 +19,45 @@ async function main() {
             headless: true
         });
 
-        // blocked resources to speed up initial load
         const context = await browser.newContext({
             userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            viewport: { width: 1280, height: 800 }
         });
 
-        // Add cookies
-        const cookies = [{
-            name: 'li_at',
-            value: cookie.split(';')[0].replace('li_at=', '').trim(), // Ensure simple value if full string passed
-            domain: '.linkedin.com',
-            path: '/',
-            httpOnly: true,
-            secure: true,
-            sameSite: 'None'
-        }];
+        // Parse CSRF token
+        let csrfToken = 'ajax:4624395368366964243'; // Fallback
+        const csrfMatch = cookie.match(/JSESSIONID="?([^";]+)"?/);
+        if (csrfMatch) csrfToken = csrfMatch[1].replace(/"/g, '');
 
-        // If JSESSIONID is in the env var (it should be for strict security), add it too
-        const jsessionMatch = cookie.match(/JSESSIONID="?([^";]+)"?/);
-        if (jsessionMatch) {
-            cookies.push({
-                name: 'JSESSIONID',
-                value: jsessionMatch[1],
-                domain: '.linkedin.com',
-                path: '/',
-                secure: true
-            });
+        const headers = {
+            'x-li-lang': 'en_US',
+            'accept': 'application/vnd.linkedin.normalized+json+2.1',
+            'Csrf-Token': csrfToken,
+            'Cookie': `li_at=${cookie.split(';')[0].replace('li_at=', '').trim()}; JSESSIONID="${csrfToken}";`
+        };
+
+        const request = context.request;
+
+        console.log('Sending API request via Playwright network stack...');
+
+        const meRes = await request.get('https://www.linkedin.com/voyager/api/me', { headers });
+
+        if (!meRes.ok()) {
+            console.error(`Status: ${meRes.status()} ${meRes.statusText()}`);
+            console.error(`Body: ${await meRes.text()}`);
+            throw new Error('API Authentication Failed (Cookie likely invalid)');
         }
 
-        await context.addCookies(cookies);
-
-        const page = await context.newPage();
-
-        // Block heavy resources (images, media, fonts) but ALLOW CSS/JS/XHR to ensure page loads correctly
-        await page.route('**/*.{png,jpg,jpeg,gif,webp,svg,woff,woff2,ttf,eot,mp4,mp3}', route => route.abort());
-
-        console.log('Navigating to LinkedIn to establish session...');
-        try {
-            // We just need to hit the domain to set the session state
-            // waitUntil: 'commit' is faster/safer if we just want to establish context
-            await page.goto('https://www.linkedin.com/feed/', { waitUntil: 'domcontentloaded', timeout: 30000 });
-        } catch (e) {
-            console.log(`Navigation partial error (${e.message}), waiting for stability...`);
-        }
-
-        // Wait for stability
-        await page.waitForTimeout(5000);
-
-        console.log('Session established. Fetching "Me" profile for URN...');
-
-        // Execute fetch inside the browser context
-        const me = await page.evaluate(async () => {
-            const res = await fetch('https://www.linkedin.com/voyager/api/me', {
-                headers: { 'x-li-lang': 'en_US', 'accept': 'application/vnd.linkedin.normalized+json+2.1' }
-            });
-            if (!res.ok) throw new Error(`Me API Status: ${res.status}`);
-            return await res.json();
-        });
-
+        const me = await meRes.json();
         const entityUrn = me.miniProfile.entityUrn;
         console.log(`Logged in as: ${me.miniProfile.firstName}. URN: ${entityUrn}`);
 
-        console.log('Fetching recent activity feed via internalized API...');
-        const feedData = await page.evaluate(async (urn) => {
-            const url = `https://www.linkedin.com/voyager/api/identity/profileUpdatesV2?count=40&includeLongTermHistory=true&moduleKey=member-shares:phone&q=memberShareFeed&start=0&profileUrn=${urn}`;
-            const res = await fetch(url, {
-                headers: { 'x-li-lang': 'en_US', 'accept': 'application/vnd.linkedin.normalized+json+2.1' }
-            });
-            if (!res.ok) throw new Error(`Feed API Status: ${res.status}`);
-            return await res.json();
-        }, entityUrn);
+        console.log('Fetching recent activity feed...');
+        const feedRes = await request.get(`https://www.linkedin.com/voyager/api/identity/profileUpdatesV2?count=40&includeLongTermHistory=true&moduleKey=member-shares:phone&q=memberShareFeed&start=0&profileUrn=${entityUrn}`, { headers });
 
-        // Process Data (Standard Node.js logic from here)
+        if (!feedRes.ok()) throw new Error(`Feed API Failed: ${feedRes.status()}`);
+
+        const feedData = await feedRes.json();
+
         console.log(`Feed fetched. Found ${feedData.elements ? feedData.elements.length : 0} items.`);
 
         const postStats = new Map();
@@ -120,7 +86,7 @@ async function main() {
             });
         }
 
-        // --- Sheet Update Logic (Same as before) ---
+        // --- Sheet Update Logic ---
         const postsNeedingStats = await sheets.getPostsNeedingStats('LinkedIn Posted');
         console.log(`${postsNeedingStats.length} posts in sheet need stats`);
 
@@ -172,10 +138,6 @@ async function main() {
 
     } catch (error) {
         console.error('Hybrid execution failed:', error);
-        // Take screenshot if page exists, might help debug
-        if (browser) {
-            // ... logic to save screenshot if needed
-        }
         process.exit(1);
     } finally {
         if (browser) await browser.close();
