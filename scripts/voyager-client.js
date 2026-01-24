@@ -26,7 +26,7 @@ class VoyagerClient {
 
         // Match JSESSIONID
         const match = cookie.match(/JSESSIONID="([^"]+)"/);
-
+        
         if (match) {
             console.log('Extracted CSRF token from JSESSIONID');
             return match[1];
@@ -39,17 +39,54 @@ class VoyagerClient {
             return matchSimple[1].replace(/"/g, '');
         }
 
-        console.warn('Could not extract JSESSIONID from cookie string. Using hardcoded fallback (likely to fail 403).');
-        return 'ajax:4624395368366964243';
+        console.warn('Could not extract JSESSIONID from cookie string. Using fallback, but will try dynamic fetch.');
+        return 'ajax:fallback-462439536836';
     }
 
     async getMyself() {
+        // Ensure we have a valid CSRF token
+        if (this.headers['Csrf-Token'].includes('fallback')) {
+             console.log('CSRF token missing/fallback. Attempting to fetch fresh token from homepage...');
+             await this.fetchCsrfFromHomepage();
+        }
+
         const data = await this.request('https://www.linkedin.com/voyager/api/me');
         // miniProfile: { entityUrn: "urn:li:fs_miniProfile:ACoAA...", ... }
         return data;
     }
 
+    async fetchCsrfFromHomepage() {
+        return new Promise((resolve) => {
+            const req = https.get('https://www.linkedin.com/', { headers: this.headers }, (res) => {
+                // Check set-cookie headers
+                const setCookie = res.headers['set-cookie'];
+                if (setCookie) {
+                    setCookie.forEach(c => {
+                        if (c.includes('JSESSIONID')) {
+                            const match = c.match(/JSESSIONID="?([^";]+)"?/);
+                            if (match) {
+                                console.log('Successfully fetched fresh CSRF token from homepage!');
+                                this.headers['Csrf-Token'] = match[1];
+                            }
+                        }
+                    });
+                }
+                resolve();
+            });
+            req.on('error', (e) => {
+                console.warn('Failed to visit homepage for CSRF:', e.message);
+                resolve();
+            });
+            req.end();
+        });
+    }
+
     async getRecentActivity(publicIdentifier) {
+        // Ensure CSRF if getMyself wasn't called (though main script calls getMyself first)
+        if (this.headers['Csrf-Token'].includes('fallback')) {
+             await this.fetchCsrfFromHomepage();
+        }
+        
         // If we don't have publicIdentifier (like "chad-van-der-walt..."), we might need to fetch it first
         // But better is to search by URN.
         // Let's assume we fetch "me" first to get URN.
