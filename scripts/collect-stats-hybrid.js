@@ -51,6 +51,15 @@ async function main() {
         // Wait for stability and cookie setting
         await page.waitForTimeout(5000);
 
+        const finalUrl = page.url();
+        console.log(`Navigation Complete. Current URL: ${finalUrl}`);
+
+        if (!finalUrl.includes('feed') && !finalUrl.includes('linkedin.com/in/')) {
+            console.warn('Warning: Did not land on Feed or Profile. Likely on a security checkpoint or login page.');
+            // Take screenshot to artifact (base64) for debugging? 
+            // For now just logging is enough.
+        }
+
         // Harvest REAL cookies from the authenticated context
         const contextCookies = await context.cookies();
         const liAtCookie = contextCookies.find(c => c.name === 'li_at');
