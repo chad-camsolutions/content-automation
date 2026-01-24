@@ -1,0 +1,158 @@
+collect	Set up job	﻿2026-01-24T19:36:22.3536920Z Current runner version: '2.331.0'
+collect	Set up job	2026-01-24T19:36:22.3563489Z ##[group]Runner Image Provisioner
+collect	Set up job	2026-01-24T19:36:22.3564688Z Hosted Compute Agent
+collect	Set up job	2026-01-24T19:36:22.3565536Z Version: 20260115.477
+collect	Set up job	2026-01-24T19:36:22.3566453Z Commit: 4b342d620503cbe250a3154040964899ea7c9b00
+collect	Set up job	2026-01-24T19:36:22.3567446Z Build Date: 2026-01-15T22:32:41Z
+collect	Set up job	2026-01-24T19:36:22.3569059Z Worker ID: ***0c9b916c-4502-44da-82eb-86cceac0f6fd***
+collect	Set up job	2026-01-24T19:36:22.3570086Z Azure Region: westus
+collect	Set up job	2026-01-24T19:36:22.3570964Z ##[endgroup]
+collect	Set up job	2026-01-24T19:36:22.3572854Z ##[group]Operating System
+collect	Set up job	2026-01-24T19:36:22.3573857Z Ubuntu
+collect	Set up job	2026-01-24T19:36:22.3574608Z 24.04.3
+collect	Set up job	2026-01-24T19:36:22.3575485Z LTS
+collect	Set up job	2026-01-24T19:36:22.3576239Z ##[endgroup]
+collect	Set up job	2026-01-24T19:36:22.3576990Z ##[group]Runner Image
+collect	Set up job	2026-01-24T19:36:22.3577831Z Image: ubuntu-24.04
+collect	Set up job	2026-01-24T19:36:22.3578685Z Version: 20260119.4.1
+collect	Set up job	2026-01-24T19:36:22.3580011Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260119.4/images/ubuntu/Ubuntu2404-Readme.md
+collect	Set up job	2026-01-24T19:36:22.3582133Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260119.4
+collect	Set up job	2026-01-24T19:36:22.3583378Z ##[endgroup]
+collect	Set up job	2026-01-24T19:36:22.3585036Z ##[group]GITHUB_TOKEN Permissions
+collect	Set up job	2026-01-24T19:36:22.3587253Z Contents: read
+collect	Set up job	2026-01-24T19:36:22.3588152Z Metadata: read
+collect	Set up job	2026-01-24T19:36:22.3588895Z Packages: read
+collect	Set up job	2026-01-24T19:36:22.3589658Z ##[endgroup]
+collect	Set up job	2026-01-24T19:36:22.3592402Z Secret source: Actions
+collect	Set up job	2026-01-24T19:36:22.3593441Z Prepare workflow directory
+collect	Set up job	2026-01-24T19:36:22.3930587Z Prepare all required actions
+collect	Set up job	2026-01-24T19:36:22.3969116Z Getting action download info
+collect	Set up job	2026-01-24T19:36:22.8109502Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+collect	Set up job	2026-01-24T19:36:22.9179563Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+collect	Set up job	2026-01-24T19:36:23.1125760Z Complete job name: collect
+collect	Checkout code	﻿2026-01-24T19:36:23.1825045Z ##[group]Run actions/checkout@v4
+collect	Checkout code	2026-01-24T19:36:23.1826054Z with:
+collect	Checkout code	2026-01-24T19:36:23.1826720Z   repository: chad-camsolutions/content-automation
+collect	Checkout code	2026-01-24T19:36:23.1827657Z   token: ***
+collect	Checkout code	2026-01-24T19:36:23.1828211Z   ssh-strict: true
+collect	Checkout code	2026-01-24T19:36:23.1828799Z   ssh-user: git
+collect	Checkout code	2026-01-24T19:36:23.1829371Z   persist-credentials: true
+collect	Checkout code	2026-01-24T19:36:23.1829984Z   clean: true
+collect	Checkout code	2026-01-24T19:36:23.1830544Z   sparse-checkout-cone-mode: true
+collect	Checkout code	2026-01-24T19:36:23.1831198Z   fetch-depth: 1
+collect	Checkout code	2026-01-24T19:36:23.1832024Z   fetch-tags: false
+collect	Checkout code	2026-01-24T19:36:23.1832610Z   show-progress: true
+collect	Checkout code	2026-01-24T19:36:23.1833189Z   lfs: false
+collect	Checkout code	2026-01-24T19:36:23.1833734Z   submodules: false
+collect	Checkout code	2026-01-24T19:36:23.1834306Z   set-safe-directory: true
+collect	Checkout code	2026-01-24T19:36:23.1835177Z ##[endgroup]
+collect	Checkout code	2026-01-24T19:36:23.2937605Z Syncing repository: chad-camsolutions/content-automation
+collect	Checkout code	2026-01-24T19:36:23.2940926Z ##[group]Getting Git version info
+collect	Checkout code	2026-01-24T19:36:23.2942855Z Working directory is '/home/runner/work/content-automation/content-automation'
+collect	Checkout code	2026-01-24T19:36:23.2945299Z [command]/usr/bin/git version
+collect	Checkout code	2026-01-24T19:36:23.3026283Z git version 2.52.0
+collect	Checkout code	2026-01-24T19:36:23.3053254Z ##[endgroup]
+collect	Checkout code	2026-01-24T19:36:23.3069096Z Temporarily overriding HOME='/home/runner/work/_temp/1091b6fa-79f9-4194-af82-bd0ef68d2419' before making global git config changes
+collect	Checkout code	2026-01-24T19:36:23.3071987Z Adding repository directory to the temporary git global config as a safe directory
+collect	Checkout code	2026-01-24T19:36:23.3083697Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/content-automation/content-automation
+collect	Checkout code	2026-01-24T19:36:23.3129964Z Deleting the contents of '/home/runner/work/content-automation/content-automation'
+collect	Checkout code	2026-01-24T19:36:23.3133687Z ##[group]Initializing the repository
+collect	Checkout code	2026-01-24T19:36:23.3138759Z [command]/usr/bin/git init /home/runner/work/content-automation/content-automation
+collect	Checkout code	2026-01-24T19:36:23.3291370Z hint: Using 'master' as the name for the initial branch. This default branch name
+collect	Checkout code	2026-01-24T19:36:23.3293498Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+collect	Checkout code	2026-01-24T19:36:23.3295679Z hint: to use in all of your new repositories, which will suppress this warning,
+collect	Checkout code	2026-01-24T19:36:23.3297141Z hint: call:
+collect	Checkout code	2026-01-24T19:36:23.3297962Z hint:
+collect	Checkout code	2026-01-24T19:36:23.3298952Z hint: 	git config --global init.defaultBranch <name>
+collect	Checkout code	2026-01-24T19:36:23.3299776Z hint:
+collect	Checkout code	2026-01-24T19:36:23.3300509Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+collect	Checkout code	2026-01-24T19:36:23.3301584Z hint: 'development'. The just-created branch can be renamed via this command:
+collect	Checkout code	2026-01-24T19:36:23.3302768Z hint:
+collect	Checkout code	2026-01-24T19:36:23.3303408Z hint: 	git branch -m <name>
+collect	Checkout code	2026-01-24T19:36:23.3304368Z hint:
+collect	Checkout code	2026-01-24T19:36:23.3305176Z hint: Disable this message with "git config set advice.defaultBranchName false"
+collect	Checkout code	2026-01-24T19:36:23.3306408Z Initialized empty Git repository in /home/runner/work/content-automation/content-automation/.git/
+collect	Checkout code	2026-01-24T19:36:23.3309976Z [command]/usr/bin/git remote add origin https://github.com/chad-camsolutions/content-automation
+collect	Checkout code	2026-01-24T19:36:23.3344825Z ##[endgroup]
+collect	Checkout code	2026-01-24T19:36:23.3345849Z ##[group]Disabling automatic garbage collection
+collect	Checkout code	2026-01-24T19:36:23.3348080Z [command]/usr/bin/git config --local gc.auto 0
+collect	Checkout code	2026-01-24T19:36:23.3375361Z ##[endgroup]
+collect	Checkout code	2026-01-24T19:36:23.3376287Z ##[group]Setting up auth
+collect	Checkout code	2026-01-24T19:36:23.3382145Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+collect	Checkout code	2026-01-24T19:36:23.3411254Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+collect	Checkout code	2026-01-24T19:36:23.3807009Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+collect	Checkout code	2026-01-24T19:36:23.3835460Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+collect	Checkout code	2026-01-24T19:36:23.4051601Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+collect	Checkout code	2026-01-24T19:36:23.4082208Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+collect	Checkout code	2026-01-24T19:36:23.4313642Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+collect	Checkout code	2026-01-24T19:36:23.4349925Z ##[endgroup]
+collect	Checkout code	2026-01-24T19:36:23.4351642Z ##[group]Fetching the repository
+collect	Checkout code	2026-01-24T19:36:23.4360266Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +544ffc2b1261bc63d271c4c113996d090dd0a02e:refs/remotes/origin/main
+collect	Checkout code	2026-01-24T19:36:23.8350097Z From https://github.com/chad-camsolutions/content-automation
+collect	Checkout code	2026-01-24T19:36:23.8352214Z  * [new ref]         544ffc2b1261bc63d271c4c113996d090dd0a02e -> origin/main
+collect	Checkout code	2026-01-24T19:36:23.8384544Z ##[endgroup]
+collect	Checkout code	2026-01-24T19:36:23.8385617Z ##[group]Determining the checkout info
+collect	Checkout code	2026-01-24T19:36:23.8387214Z ##[endgroup]
+collect	Checkout code	2026-01-24T19:36:23.8391431Z [command]/usr/bin/git sparse-checkout disable
+collect	Checkout code	2026-01-24T19:36:23.8434116Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+collect	Checkout code	2026-01-24T19:36:23.8459416Z ##[group]Checking out the ref
+collect	Checkout code	2026-01-24T19:36:23.8463586Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+collect	Checkout code	2026-01-24T19:36:23.8525036Z Switched to a new branch 'main'
+collect	Checkout code	2026-01-24T19:36:23.8527851Z branch 'main' set up to track 'origin/main'.
+collect	Checkout code	2026-01-24T19:36:23.8534936Z ##[endgroup]
+collect	Checkout code	2026-01-24T19:36:23.8568377Z [command]/usr/bin/git log -1 --format=%H
+collect	Checkout code	2026-01-24T19:36:23.8590067Z 544ffc2b1261bc63d271c4c113996d090dd0a02e
+collect	Setup Node.js	﻿2026-01-24T19:36:23.8917172Z ##[group]Run actions/setup-node@v4
+collect	Setup Node.js	2026-01-24T19:36:23.8917952Z with:
+collect	Setup Node.js	2026-01-24T19:36:23.8918498Z   node-version: 20
+collect	Setup Node.js	2026-01-24T19:36:23.8919055Z   always-auth: false
+collect	Setup Node.js	2026-01-24T19:36:23.8919616Z   check-latest: false
+collect	Setup Node.js	2026-01-24T19:36:23.8920336Z   token: ***
+collect	Setup Node.js	2026-01-24T19:36:23.8920882Z ##[endgroup]
+collect	Setup Node.js	2026-01-24T19:36:24.0814951Z Found in cache @ /opt/hostedtoolcache/node/20.20.0/x64
+collect	Setup Node.js	2026-01-24T19:36:24.0820966Z ##[group]Environment details
+collect	Setup Node.js	2026-01-24T19:36:24.4220106Z node: v20.20.0
+collect	Setup Node.js	2026-01-24T19:36:24.4220984Z npm: 10.8.2
+collect	Setup Node.js	2026-01-24T19:36:24.4221599Z yarn: 1.22.22
+collect	Setup Node.js	2026-01-24T19:36:24.4222921Z ##[endgroup]
+collect	Install dependencies	﻿2026-01-24T19:36:24.4327782Z ##[group]Run npm ci
+collect	Install dependencies	2026-01-24T19:36:24.4328272Z [36;1mnpm ci[0m
+collect	Install dependencies	2026-01-24T19:36:24.4372547Z shell: /usr/bin/bash -e ***0***
+collect	Install dependencies	2026-01-24T19:36:24.4373032Z ##[endgroup]
+collect	Install dependencies	2026-01-24T19:36:26.8435028Z 
+collect	Install dependencies	2026-01-24T19:36:26.8443013Z added 49 packages, and audited 50 packages in 2s
+collect	Install dependencies	2026-01-24T19:36:26.8443557Z 
+collect	Install dependencies	2026-01-24T19:36:26.8443845Z 15 packages are looking for funding
+collect	Install dependencies	2026-01-24T19:36:26.8444320Z   run `npm fund` for details
+collect	Install dependencies	2026-01-24T19:36:26.8444800Z 
+collect	Install dependencies	2026-01-24T19:36:26.8445177Z found 0 vulnerabilities
+collect	Collect LinkedIn stats via Voyager API	﻿2026-01-24T19:36:26.8617182Z ##[group]Run node scripts/collect-linkedin-stats-voyager.js
+collect	Collect LinkedIn stats via Voyager API	2026-01-24T19:36:26.8617819Z [36;1mnode scripts/collect-linkedin-stats-voyager.js[0m
+collect	Collect LinkedIn stats via Voyager API	2026-01-24T19:36:26.8651622Z shell: /usr/bin/bash -e ***0***
+collect	Collect LinkedIn stats via Voyager API	2026-01-24T19:36:26.8652247Z env:
+collect	Collect LinkedIn stats via Voyager API	2026-01-24T19:36:26.8653207Z   LINKEDIN_SESSION_COOKIE: ***
+collect	Collect LinkedIn stats via Voyager API	2026-01-24T19:36:26.8662684Z   GOOGLE_SERVICE_ACCOUNT: ***
+collect	Collect LinkedIn stats via Voyager API	
+collect	Collect LinkedIn stats via Voyager API	2026-01-24T19:36:26.8663171Z   SPREADSHEET_ID: ***
+collect	Collect LinkedIn stats via Voyager API	2026-01-24T19:36:26.8663500Z ##[endgroup]
+collect	Collect LinkedIn stats via Voyager API	2026-01-24T19:36:27.4601288Z Starting LinkedIn stats collection (Voyager API)...
+collect	Collect LinkedIn stats via Voyager API	2026-01-24T19:36:27.4607803Z Could not extract JSESSIONID from cookie string. Using fallback, but will try dynamic fetch.
+collect	Collect LinkedIn stats via Voyager API	2026-01-24T19:36:27.4608973Z Fetching user profile...
+collect	Collect LinkedIn stats via Voyager API	2026-01-24T19:36:27.4610036Z CSRF token missing/fallback. Attempting to fetch fresh token from homepage...
+collect	Collect LinkedIn stats via Voyager API	2026-01-24T19:36:27.7967844Z Voyager execution failed: Voyager API Error: 302 Found
+collect	Collect LinkedIn stats via Voyager API	2026-01-24T19:36:27.8079711Z ##[error]Process completed with exit code 1.
+collect	Post Checkout code	﻿2026-01-24T19:36:27.8190371Z Post job cleanup.
+collect	Post Checkout code	2026-01-24T19:36:27.9135461Z [command]/usr/bin/git version
+collect	Post Checkout code	2026-01-24T19:36:27.9171069Z git version 2.52.0
+collect	Post Checkout code	2026-01-24T19:36:27.9215929Z Temporarily overriding HOME='/home/runner/work/_temp/e5e446ba-fb8a-465e-b573-697652c20825' before making global git config changes
+collect	Post Checkout code	2026-01-24T19:36:27.9217738Z Adding repository directory to the temporary git global config as a safe directory
+collect	Post Checkout code	2026-01-24T19:36:27.9222874Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/content-automation/content-automation
+collect	Post Checkout code	2026-01-24T19:36:27.9259357Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+collect	Post Checkout code	2026-01-24T19:36:27.9294146Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+collect	Post Checkout code	2026-01-24T19:36:27.9541865Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+collect	Post Checkout code	2026-01-24T19:36:27.9562379Z http.https://github.com/.extraheader
+collect	Post Checkout code	2026-01-24T19:36:27.9574894Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+collect	Post Checkout code	2026-01-24T19:36:27.9606583Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+collect	Post Checkout code	2026-01-24T19:36:27.9823736Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+collect	Post Checkout code	2026-01-24T19:36:27.9854777Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+collect	Complete job	﻿2026-01-24T19:36:28.0174653Z Cleaning up orphan processes
